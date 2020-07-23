@@ -6,7 +6,7 @@ int pir_reads[] = {-1}; // The data which the sensors read
 bool pir_triggers[] = {false}; // Gets true when a sensor gets triggered
 
 int triggerBuffer[BUFFER_SIZE]; // Data is kept in a buffer and
-                                // when the buffer is triggered,
+                                // when the buffer gets full,
                                 // it will get sent through the wifi module
                                 // to the server
 int currentBufferIndex=0;
@@ -17,7 +17,6 @@ void setup() {
   initInputPins();
   initBuffer();
 }
-
 
 void loop() {
   readPirSensors();
@@ -53,7 +52,6 @@ void analyzePirSensorsOutputs(){
   }
 }
 
-
 void addToBuffer(int triggredPin) {
   triggerBuffer[currentBufferIndex++] = triggredPin;
   if (currentBufferIndex == BUFFER_SIZE) {
@@ -77,7 +75,7 @@ void printBuffer() {
 Serial.println("::::::BUFFER::::::");
   for (int i=0; i<BUFFER_SIZE; i++) {
     Serial.print(triggerBuffer[i]);
-    Serial.print("\t");
+    Serial.print(" ");
   }
   Serial.print("\n");
 }
