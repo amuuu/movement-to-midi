@@ -1,14 +1,16 @@
-//////////////////////////////////////////////////////////////////
-///   be sure to calibrate your sensors for better results!    ///
-//////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+///   make sure to calibrate your sensors for better results!    ///
+////////////////////////////////////////////////////////////////////
 
+
+// Change these based on your board
 #define BUFFER_SIZE 10
 #define NUM_PIR_SENSORS 2
-
 int pir_pins[] = {3,4}; // Digital numbers pins for PIR sensors
-int pir_reads[] = {-1, -1}; // The data which the sensors read
-bool pir_triggers[] = {false, false}; // Gets true when a sensor gets triggered
 
+
+int pir_reads[NUM_PIR_SENSORS]; // The data which the sensors read
+bool pir_triggers[NUM_PIR_SENSORS]; // Gets true when a sensor gets triggered
 int triggerBuffer[BUFFER_SIZE]; // Data is kept in a buffer and
                                 // when the buffer gets full,
                                 // it will get sent through the wifi module
@@ -19,6 +21,7 @@ int currentBufferIndex=0;
 void setup() {
   Serial.begin(9600);
   initInputPins();
+  initInputArrays();
   initBuffer();
 }
 
@@ -91,5 +94,12 @@ Serial.println("::::::BUFFER::::::");
 void initInputPins() {
   for (int i=0; i<NUM_PIR_SENSORS; i++) {
     pinMode(pir_pins[i], INPUT);
+  }
+}
+
+void initInputArrays(){
+  for (int i=0; i<NUM_PIR_SENSORS; i++){
+    pir_reads[i]=-1;
+    pir_triggers[i]=false;
   }
 }
