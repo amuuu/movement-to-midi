@@ -1,28 +1,46 @@
 ////////////////////////////////////////////////////////////////////
 ///   make sure to calibrate your sensors for better results!    ///
 ////////////////////////////////////////////////////////////////////
-
+#include <SoftwareSerial.h>
+#define RX 10 
+#define TX 11
 
 // Change these based on your board
 #define BUFFER_SIZE 10
 #define NUM_PIR_SENSORS 2
-int pir_pins[] = {3,4}; // Digital numbers pins for PIR sensors
+int pirPins[] = {3,4}; // Digital pins for PIR sensors
+
+// Change these based on your network
+String networkSsid = "amu";
+String networkPasswd = "amuamuamu";
+String server = "192.168.43.26"; // Your local server IP or any other IP
+String uri = "/";
 
 
-int pir_reads[NUM_PIR_SENSORS]; // The data which the sensors read
-bool pir_triggers[NUM_PIR_SENSORS]; // Gets true when a sensor gets triggered
+// Internal variables
+int pirReads[NUM_PIR_SENSORS]; // The data which the sensors read
+bool pirTriggers[NUM_PIR_SENSORS]; // Gets true when a sensor gets triggered
 int triggerBuffer[BUFFER_SIZE]; // Data is kept in a buffer and
                                 // when the buffer gets full,
                                 // it will get sent through the wifi module
                                 // to the server
 int currentBufferIndex=0;
 
+SoftwareSerial esp(RX,TX);
+String dataTobeSent;
+
 
 void setup() {
   Serial.begin(9600);
+  esp.begin(115200);
+  
   initInputPins();
   initInputArrays();
   initBuffer();
+
+  connectToWifi();
+
+  delay(5000);
 }
 
 void loop() {
@@ -36,25 +54,25 @@ void loop() {
 
 void readPirSensors(){
   for (int i=0; i<NUM_PIR_SENSORS; i++){
-    pir_reads[i] = digitalRead(pir_pins[i]);
+    pirReads[i] = digitalRead(pirPins[i]);
   }
 }
 
 void analyzePirSensorsOutputs(){
   for (int i=0; i<NUM_PIR_SENSORS; i++)
   {
-    if (pir_reads[i] == HIGH) {
-      if (!pir_triggers[i]) {
-        addToBuffer(pir_pins[i]);
+    if (pirReads[i] == HIGH) {
+      if (!pirTriggers[i]) {
+        addToBuffer(pirPins[i]);
         Serial.print("TRIGGERED ");
-        Serial.print(pir_pins[i]);
+        Serial.print(pirPins[i]);
         Serial.println();
-        pir_triggers[i] = true;
+        pirTriggers[i] = true;
       }
     }
     else {
-      if (pir_triggers[i]) {
-        pir_triggers[i] = false;
+      if (pirTriggers[i]) {
+        pirTriggers[i] = false;
       }
     }
   }
@@ -80,6 +98,12 @@ void initBuffer() {
 
 void sendBuffer() {
   // send the buffer through wifi
+  String data;
+  for (int i=0; i<BUFFER_SIZE; i++) {
+    data += String(triggerBuffer[i]);
+  }
+
+  sendHttpPost(data);
 }
 
 void printBuffer() {
@@ -93,13 +117,91 @@ Serial.println("::::::BUFFER::::::");
 
 void initInputPins() {
   for (int i=0; i<NUM_PIR_SENSORS; i++) {
-    pinMode(pir_pins[i], INPUT);
+    pinMode(pirPins[i], INPUT);
   }
 }
 
 void initInputArrays(){
-  for (int i=0; i<NUM_PIR_SENSORS; i++){
-    pir_reads[i]=-1;
-    pir_triggers[i]=false;
+  for (int i=0; i<NUM_PIR_SENSORS; i++) {
+    pirReads[i]=-1;
+    pirTriggers[i]=false;
+  }
+}
+
+void resetEsp() {
+  esp.println("AT+RST");
+  delay(1000);
+  if (esp.find("OK")) {
+    Serial.println("ESP module reset successfully");
+  }
+}
+
+void connectToWifi() {
+  Serial.println("Setting up...");
+  String setup_cmd = "AT+CWMODE=3"; 
+  esp.println(setup_cmd);
+  delay(1000);
+
+  Serial.println("Connecting to wifi...");
+  String connect_cmd = "AT+CWJAP=\""+networkSsid+"\",\""+networkPasswd+"\"";
+  esp.println(connect_cmd);
+  delay(4000);
+  if (esp.find("OK")) {
+    Serial.println("Connected to wifi successfully!");
+  }
+  else {
+    connectToWifi();
+    Serial.println("Cannot connect to wifi");
+  }  
+}
+
+void sendHttpPost(String data) {
+
+  // Handling the TCP conncetion
+  Serial.println("Handling TCP connection...");
+  if (esp.find("OK")) {
+    Serial.println("TCP connection already ready");
+  }
+  else {
+    esp.println("AT+CIPSTART=\"TCP\",\"" + server + "\",80"); //start a TCP connection.
+    if (esp.find("OK")) {
+      Serial.println("TCP connection ready");
+    }
+  }
+  delay(1000);
+
+  // Sending the post request
+  String postRequest =
+         "POST " + uri + " HTTP/1.0\r\n" +
+         "Host: " + server + "\r\n" +
+         "Accept: *" + "/" + "*\r\n" +
+         "Content-Length: " + data.length() + "\r\n" +  
+         "Content-Type: application/x-www-form-urlencoded\r\n" +
+         "\r\n" + data;
+
+  // Number of the characters to be sent.
+  Serial.println("Sending the number of characters...");
+  esp.print("AT+CIPSEND=");
+  esp.print(postRequest.length());
+
+  delay(500);
+
+  if (esp.find(">")) {
+    Serial.println("Sending the post request...");
+    esp.print(postRequest);
+    
+    if (esp.find("SEND OK")) {
+      Serial.println("Packet sent");
+      while (esp.available()) {
+        String tmpResp = esp.readString();
+        Serial.print("tmpresp");
+        Serial.print(tmpResp);
+        Serial.println();
+      }
+      
+      // close the connection
+      esp.println("AT+CIPCLOSE");
+    }
+  
   }
 }
