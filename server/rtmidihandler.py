@@ -1,4 +1,5 @@
 import rtmidi
+import time
 
 from signalthread import *
 
@@ -13,6 +14,8 @@ class RtMidi():
 
         self.buffer = []
         
+        self.last_tick = time.time()
+
         print(self.available_ports)
         if self.available_ports:
             self.midiout.open_port(self.port)
@@ -20,7 +23,11 @@ class RtMidi():
             self.midiout.open_virtual_port("Virtual output")
 
     def send_signal(self):
-        self.buffer.reverse()
-        play_thread = midi_signal_thread(self.midiout, self.buffer.pop())
-        self.buffer.reverse()        
-        play_thread.start()
+        current_time = time.time()
+        if current_time-self.last_tick > 5:
+            self.last_tick = current_time
+            self.buffer.reverse()
+            #print(self.buffer.pop())
+            #play_thread = midi_signal_thread(self.midiout, self.buffer.pop())
+            self.buffer.reverse()        
+            #play_thread.start()

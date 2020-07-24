@@ -16,11 +16,12 @@ class DataProcessor():
     def process_data(self, data):
         buffer = []
         for value in data:
-            midi_value=(int)(data/self.unit_size) + min_midi_note
+
+            midi_value=(int)(int(value)/self.unit_size) + min_midi_note
             
             # quantize the value for minor/major scale
             if self.scale_type != 0:
-                idx = (np.abs(self.notes-value)).argmin()
+                idx =(np.abs(self.notes-int(value))).argmin()
                 midi_value = self.notes[idx]
             
             buffer.append(midi_value)

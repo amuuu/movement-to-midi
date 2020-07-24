@@ -26,9 +26,10 @@ with rt.midiout:
                     else:
                         print(data)
                         
-                        if "TCP".encode() not in data:
-                            string_buffer = data.encode().split('-')
-                            rt.buffer.append(dp.process_data(string_buffer))
+                        raw_data = data.decode("utf-8")
+                        if "TCP" not in raw_data:
+                            string_buffer = raw_data.split('-')
+                            rt.buffer.extend(dp.process_data(string_buffer))
         
             
                     rt.send_signal() # pops a note from the rtmidi buffer and plays it
