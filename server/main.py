@@ -3,7 +3,7 @@ import socket
 from dataprocessor import *
 from rtmidihandler import *
 from mainplaythread import *
-from init import *
+from params import *
 
 main_playing_thread = main_play_thread()
 print("Initialized the server on", HOST, ":", PORT)

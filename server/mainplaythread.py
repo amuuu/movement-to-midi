@@ -4,7 +4,7 @@ import time
 import rtmidi
 
 from rtmidihandler import *
-from init import *
+from params import *
 
 class main_play_thread(threading.Thread):
     def __init__(self):
