@@ -2,13 +2,17 @@
 ///   make sure to calibrate your sensors for better results!    ///
 ////////////////////////////////////////////////////////////////////
 #include <SoftwareSerial.h>
-#define RX 10 
-#define TX 11
+#define RX 11 
+#define TX 12
 
 // Change these based on your board
 #define BUFFER_SIZE 10
 #define NUM_PIR_SENSORS 2
 int pirPins[] = {3,4}; // Digital pins for PIR sensors
+
+
+SoftwareSerial esp(RX,TX);
+String dataTobeSent;
 
 // Change these based on your network
 String networkSsid = "amu";
@@ -26,19 +30,22 @@ int triggerBuffer[BUFFER_SIZE]; // Data is kept in a buffer and
                                 // to the server
 int currentBufferIndex=0;
 
-SoftwareSerial esp(RX,TX);
-String dataTobeSent;
+
 
 
 void setup() {
-  Serial.begin(9600);
   esp.begin(115200);
+  Serial.begin(9600);
   
   initInputPins();
   initInputArrays();
   initBuffer();
 
-  connectToWifi();
+  esp.println("AT");
+  //if (esp.available()) {
+    resetEsp();
+    connectToWifi();
+  //}
 
   delay(5000);
 }
@@ -55,7 +62,9 @@ void loop() {
 void readPirSensors(){
   for (int i=0; i<NUM_PIR_SENSORS; i++){
     pirReads[i] = digitalRead(pirPins[i]);
+    delay(100);
   }
+  delay(100);
 }
 
 void analyzePirSensorsOutputs(){
@@ -76,6 +85,7 @@ void analyzePirSensorsOutputs(){
       }
     }
   }
+  delay(100);
 }
 
 void addToBuffer(int triggredPin) {
@@ -101,6 +111,8 @@ void sendBuffer() {
   String data;
   for (int i=0; i<BUFFER_SIZE; i++) {
     data += String(triggerBuffer[i]);
+    if (i!=BUFFER_SIZE-1)
+      data += "-";
   }
 
   sendHttpPost(data);
@@ -129,10 +141,17 @@ void initInputArrays(){
 }
 
 void resetEsp() {
+
+  esp.println("AT+IPR=9600");
+  delay(1000);
+  
   esp.println("AT+RST");
   delay(1000);
   if (esp.find("OK")) {
     Serial.println("ESP module reset successfully");
+  }
+  else {
+    Serial.println("Reset error");
   }
 }
 
@@ -163,7 +182,10 @@ void sendHttpPost(String data) {
     Serial.println("TCP connection already ready");
   }
   else {
-    esp.println("AT+CIPSTART=\"TCP\",\"" + server + "\",80"); //start a TCP connection.
+    esp.print("AT+CIPSTART=\"TCP\",\"");
+    esp.print(server);
+    esp.println("\",80"); //start a TCP connection.
+    
     if (esp.find("OK")) {
       Serial.println("TCP connection ready");
     }
@@ -182,10 +204,11 @@ void sendHttpPost(String data) {
   // Number of the characters to be sent.
   Serial.println("Sending the number of characters...");
   esp.print("AT+CIPSEND=");
-  esp.print(postRequest.length());
+  esp.println(postRequest.length());
 
+  
   delay(500);
-
+  
   if (esp.find(">")) {
     Serial.println("Sending the post request...");
     esp.print(postRequest);
@@ -204,4 +227,5 @@ void sendHttpPost(String data) {
     }
   
   }
+  esp.println();
 }
