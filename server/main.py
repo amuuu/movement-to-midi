@@ -27,11 +27,11 @@ with rt.midiout:
                         print(data)
                         """
                         if "TCP".encode() not in data:
-                            integer_data= (int)(data.split("oded\r\n\r\n".encode(),1)[1])
+                            integer_data= data.split("oded\r\n\r\n".encode(),1)[1]
+                            print(integer_data)
                             rt.send_signal(dp.process_data(integer_data)) # pick the value from the request sent from arduino,
                                                                                          # process it, and send out midi signal.
                         """
-                    # conn.sendall(data)
             finally:
                 conn.close()
 

@@ -12,7 +12,7 @@ int pirPins[] = {3,4}; // Digital pins for PIR sensors
 
 
 SoftwareSerial esp(RX,TX);
-String dataTobeSent;
+
 
 // Change these based on your network
 String networkSsid = "amu";
@@ -34,18 +34,19 @@ int currentBufferIndex=0;
 
 
 void setup() {
-  esp.begin(115200);
+  esp.begin(9600); // TLDR: When you change the baud rate, it will be saved on the module.
+                   // You can change the baud rate using this command: AT+CIOBAUD=9600 (RECOMMENDED RATE: 9600)
+                   // Note: If you change the baud from 115200 to 9600 and you decide to use that module with
+                   // 115200 baud on for example another projet afterwards, the software serial connection won't work
+                   // because previously the baud rate has been set to 9600. You have to change it back to 115200.
   Serial.begin(9600);
   
   initInputPins();
   initInputArrays();
   initBuffer();
 
-  esp.println("AT");
-  //if (esp.available()) {
-    resetEsp();
-    connectToWifi();
-  //}
+  resetEsp();
+  connectToWifi();
 
   delay(5000);
 }
@@ -53,8 +54,7 @@ void setup() {
 void loop() {
   readPirSensors();
   analyzePirSensorsOutputs();
-  
-  printBuffer();
+  //printBuffer();
   delay(1000);
 }
 
@@ -72,16 +72,18 @@ void analyzePirSensorsOutputs(){
   {
     if (pirReads[i] == HIGH) {
       if (!pirTriggers[i]) {
-        addToBuffer(pirPins[i]);
         Serial.print("TRIGGERED ");
         Serial.print(pirPins[i]);
         Serial.println();
+        
+        addToBuffer(pirPins[i]);
         pirTriggers[i] = true;
       }
     }
     else {
       if (pirTriggers[i]) {
         pirTriggers[i] = false;
+        //pirReads[i] = LOW;
       }
     }
   }
@@ -90,13 +92,14 @@ void analyzePirSensorsOutputs(){
 
 void addToBuffer(int triggredPin) {
   triggerBuffer[currentBufferIndex++] = triggredPin;
+  
   if (currentBufferIndex == BUFFER_SIZE) {
-    
+    Serial.println("Buffer got full. Sending it through wifi.");
+    printBuffer();
     sendBuffer();
     
     currentBufferIndex = 0;
-    initBuffer();
-    Serial.println("Buffer got full.");
+    //initBuffer();
   }
 }
 
@@ -108,10 +111,10 @@ void initBuffer() {
 
 void sendBuffer() {
   // send the buffer through wifi
-  String data;
+  String data="";
   for (int i=0; i<BUFFER_SIZE; i++) {
     data += String(triggerBuffer[i]);
-    if (i!=BUFFER_SIZE-1)
+    if (i != BUFFER_SIZE-1)
       data += "-";
   }
 
@@ -119,7 +122,7 @@ void sendBuffer() {
 }
 
 void printBuffer() {
-Serial.println("::::::BUFFER::::::");
+  Serial.println("::::::BUFFER::::::");
   for (int i=0; i<BUFFER_SIZE; i++) {
     Serial.print(triggerBuffer[i]);
     Serial.print(" ");
@@ -141,10 +144,6 @@ void initInputArrays(){
 }
 
 void resetEsp() {
-
-  esp.println("AT+IPR=9600");
-  delay(1000);
-  
   esp.println("AT+RST");
   delay(1000);
   if (esp.find("OK")) {
@@ -175,43 +174,36 @@ void connectToWifi() {
 }
 
 void sendHttpPost(String data) {
-
   // Handling the TCP conncetion
   Serial.println("Handling TCP connection...");
-  if (esp.find("OK")) {
-    Serial.println("TCP connection already ready");
-  }
-  else {
+  esp.println();
+  //if (esp.find("OK")) {
+    //Serial.println("TCP connection already ready");
+ // }
+  //else {
     esp.print("AT+CIPSTART=\"TCP\",\"");
     esp.print(server);
     esp.println("\",80"); //start a TCP connection.
-    
     if (esp.find("OK")) {
       Serial.println("TCP connection ready");
+      delay(500);
     }
-  }
+  //}
   delay(1000);
 
-  // Sending the post request
-  String postRequest =
-         "POST " + uri + " HTTP/1.0\r\n" +
-         "Host: " + server + "\r\n" +
-         "Accept: *" + "/" + "*\r\n" +
-         "Content-Length: " + data.length() + "\r\n" +  
-         "Content-Type: application/x-www-form-urlencoded\r\n" +
-         "\r\n" + data;
+  String postRequest = data;
 
   // Number of the characters to be sent.
   Serial.println("Sending the number of characters...");
   esp.print("AT+CIPSEND=");
-  esp.println(postRequest.length());
-
+  esp.print(String(postRequest.length()));
+  esp.print("\r\n");  
   
   delay(500);
   
   if (esp.find(">")) {
     Serial.println("Sending the post request...");
-    esp.print(postRequest);
+    esp.println(postRequest);
     
     if (esp.find("SEND OK")) {
       Serial.println("Packet sent");
@@ -221,11 +213,11 @@ void sendHttpPost(String data) {
         Serial.print(tmpResp);
         Serial.println();
       }
-      
       // close the connection
       esp.println("AT+CIPCLOSE");
     }
   
   }
-  esp.println();
+  
+  delay(500);
 }
