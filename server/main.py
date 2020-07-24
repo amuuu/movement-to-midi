@@ -25,13 +25,14 @@ with rt.midiout:
                         break
                     else:
                         print(data)
-                        """
+                        
                         if "TCP".encode() not in data:
-                            integer_data= data.split("oded\r\n\r\n".encode(),1)[1]
-                            print(integer_data)
-                            rt.send_signal(dp.process_data(integer_data)) # pick the value from the request sent from arduino,
-                                                                                         # process it, and send out midi signal.
-                        """
+                            string_buffer = data.encode().split('-')
+                            rt.buffer.append(dp.process_data(string_buffer))
+        
+            
+                    rt.send_signal() # pops a note from the rtmidi buffer and plays it
+
             finally:
                 conn.close()
 
