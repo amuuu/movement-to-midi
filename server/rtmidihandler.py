@@ -28,6 +28,8 @@ class RtMidi():
             self.last_tick = current_time
             self.buffer.reverse()
             #print(self.buffer.pop())
-            #play_thread = midi_signal_thread(self.midiout, self.buffer.pop())
+            note = self.buffer.pop()
+            play_thread = midi_signal_thread(self.midiout, note)
+            print("Playing", note)
             self.buffer.reverse()        
-            #play_thread.start()
+            play_thread.start()

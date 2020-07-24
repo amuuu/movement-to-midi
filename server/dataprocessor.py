@@ -1,4 +1,5 @@
 import numpy as np
+from random import randrange
 
 from util import *
 
@@ -14,16 +15,27 @@ class DataProcessor():
         
 
     def process_data(self, data):
+        print("DATA: ", data)
         buffer = []
         for value in data:
-
-            midi_value=(int)(int(value)/self.unit_size) + min_midi_note
+            value = int(value)
+            base_number = -1
+            if value == 3:
+                while base_number%2 != 0:
+                    base_number = randrange(110,160)
+            elif value == 4:
+                while base_number%3 != 0:
+                    base_number = randrange(140,190)
             
+            midi_value=(int)(base_number/self.unit_size) + min_midi_note
+            
+
             # quantize the value for minor/major scale
             if self.scale_type != 0:
-                idx =(np.abs(self.notes-int(value))).argmin()
+                idx =(np.abs(self.notes-midi_value)).argmin()
                 midi_value = self.notes[idx]
             
+            print("NEW NOTE ADDED TO BUFFER: ", midi_value)
             buffer.append(midi_value)
         
         return buffer
