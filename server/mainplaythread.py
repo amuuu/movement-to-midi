@@ -16,6 +16,6 @@ class main_play_thread(threading.Thread):
             try:
                 if len(rt.buffer) != 0:
                     rt.send_signal() # pops a note from the rtmidi buffer and plays it
-                    time.sleep(0.3)
+                    time.sleep(delay_time)
             finally:
                 pass

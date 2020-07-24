@@ -28,7 +28,7 @@ with rt.midiout:
                     if not data:
                         break
                     else:
-                        print(data)
+                        print("RAW INPUT:", data)
                         
                         raw_data = data.decode("utf-8")
                         if "TCP" not in raw_data:

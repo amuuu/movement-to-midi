@@ -15,7 +15,7 @@ class DataProcessor():
         
 
     def process_data(self, data):
-        print("DATA: ", data)
+        print("RAW DATA: ", data)
         buffer = []
         for value in data:
             value = int(value)
