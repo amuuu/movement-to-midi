@@ -8,7 +8,9 @@ PORT = 80
 dp = DataProcessor(scale_name="Dm", scale_type=1) # scale_type:
                                                   # 0: none
                                                   # 1: major
-                                                  # 2: minor    
+                                                  # 2: minor
+                                                  # to be fixed: scale_type doesn't work at the moment.
+                                                  # you should specify minor and major in the scale_name
 
 rt = RtMidi(port=2, channel=1) # the port which you want
                                # to send the midiout signal to.
